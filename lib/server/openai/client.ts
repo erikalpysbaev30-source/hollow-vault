@@ -31,6 +31,10 @@ export function adaptiveRoomsEnabled(): boolean {
   return process.env.ADAPTIVE_ROOMS_ENABLED !== "false";
 }
 
+export function adaptiveReinforcementsEnabled(): boolean {
+  return process.env.ADAPTIVE_REINFORCEMENTS_ENABLED !== "false";
+}
+
 export function boundedInteger(
   raw: string | undefined,
   fallback: number,

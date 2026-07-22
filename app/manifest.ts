@@ -1,0 +1,2 @@
+import type{MetadataRoute}from"next";
+export default function manifest():MetadataRoute.Manifest{return{name:"Hollow Vault — Rift Protocol",short_name:"Hollow Vault",description:"A room-crawling bullet roguelite with local and AI-assisted adaptive rooms.",start_url:"/",display:"standalone",background_color:"#090813",theme_color:"#090813",orientation:"any",icons:[{src:"/favicon.svg",sizes:"any",type:"image/svg+xml"}]}}

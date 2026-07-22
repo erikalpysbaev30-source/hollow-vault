@@ -1,8 +1,0 @@
-auto-install-peers=true
-dedupe-peer-dependents=true
-ignore-scripts=false
-allow-scripts=true
-script-shell="/bin/bash"
-node-linker=hoisted
-shamefully-hoist=true
-strict-peer-dependencies=false

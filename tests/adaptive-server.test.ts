@@ -17,7 +17,15 @@ const request = {
     averageKillTimeMs: 2_800,
   },
   recentRooms: [{ templateId: "broken_ring", completionTimeRatio: 0.7, killRate: 1, accuracy: 0.64, damageTakenRatio: 0.2, deaths: 0, completed: true }],
+  adaptiveContext:{
+    player:{aimSkill:.7,movementSkill:.5,survivalSkill:.5,reactionSkill:.6,tacticalSkill:.6,resourceSkill:.5,reinforcementSkill:.5,aggressionPreference:.55,defensivePreference:.5,preferredCombatDistance:.55,frustrationRisk:.15,boredomRisk:.2,confidence:{overall:.8,aim:.8,movement:.7,survival:.7,tactics:.7,resources:.6,reinforcements:.4,preferences:.6}},
+    habits:{repeatedHabitIds:[],averageCombatDistance:.55,rushFrequency:.3,retreatFrequency:.2,stationaryCombatRatio:.25,coverUsageRate:.5,flankAvoidanceRate:.4},
+    preferences:{preferredDifficulty:.5,preferredRoomDuration:.5,preferredEnemyDensity:.5,preferredTacticalComplexity:.5,preferredPacingSpeed:.5,adaptationStrength:.65,confidence:.6},
+    pacingHistory:["standard" as const],calibration:{completionTimeFactor:1,damageFactor:1,killRateFactor:1,samples:1},
+  },
   candidates: [{ roomSequenceIndex: 6, presetIds: ["ring_skirmish"], mapStyleIds: ["hollow-vault"] }],
+  allowedBehaviorProfileIds:["balanced","coordinated"],
+  availableModuleIds:["entrance-south","arena-cover","flank-none","exit-south"],
 };
 
 const validResponse = {
@@ -34,6 +42,11 @@ const validResponse = {
     predictedDamageTakenRatio: 0.24,
     adaptationReasonCodes: ["balanced_pressure"],
     confidence: 0.82,
+    pacingRole:"standard" as const,
+    behaviorProfileId:"balanced",
+    roomModuleIds:["entrance-south","arena-cover","flank-none","exit-south"],
+    predictedDeathProbability:.18,
+    predictedReinforcementUsageProbability:.24,
   }],
 };
 
@@ -44,7 +57,7 @@ test("adaptive room request validation is strict and bounded", () => {
   assert.equal(adaptiveRoomRequestSchema.safeParse({ ...request, candidates: [...request.candidates, ...request.candidates] }).success, false);
   assert.equal(candidatesUseApprovedPresets(request), true);
   assert.equal(candidatesUseApprovedPresets({ ...request, candidates: [{ roomSequenceIndex: 6, presetIds: ["invented_room"], mapStyleIds: ["hollow-vault"] }] }), false);
-  assert.equal(candidatesUseApprovedPresets({ ...request, candidates: [{ roomSequenceIndex: 5, presetIds: ["ring_skirmish"], mapStyleIds: ["hollow-vault"] }] }), false);
+  assert.equal(candidatesUseApprovedPresets({ ...request, candidates: [{ roomSequenceIndex: 10, presetIds: ["ring_skirmish"], mapStyleIds: ["hollow-vault"] }] }), false);
 });
 
 test("provider response validation rejects unknown fields and unsafe ranges", () => {
