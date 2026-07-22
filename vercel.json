@@ -1,4 +1,3 @@
 {
-  "buildCommand": "pnpm install --no-frozen-lockfile --force && pnpm run build",
   "devCommand": "pnpm dev"
 }
