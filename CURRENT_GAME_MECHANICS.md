@@ -1,5 +1,7 @@
 # Current Game Mechanics Audit
 
+> Historical audit note (pre-completion snapshot): this report predates the final tutorial, mobile-input, run-resume, and five-room assessment implementation. For the current release status and verified behavior, use `IMPLEMENTATION_STATUS.md`; where the two conflict, that newer file and the runtime code are authoritative.
+
 Audit target: repository state at commit `f1011c3` (`Improve UI readability and accessibility`). This report describes executed code, not README claims or earlier prompts. Line references use the current compact source formatting, where a single numbered line may contain a complete runtime branch.
 
 ## 1. Executive Summary

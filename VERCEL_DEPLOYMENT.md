@@ -2,6 +2,8 @@
 
 The repository is a native Next.js App Router application. Vercel should detect **Next.js** automatically. Do not configure a static export or output directory.
 
+`pnpm-workspace.yaml` contains a narrow pnpm 11 `allowBuilds` policy for the exact native/build packages required by this locked dependency graph. Keep that file in the deployment source; otherwise pnpm intentionally fails the install instead of running unreviewed lifecycle scripts.
+
 ## Required software
 
 - Node.js 24.x
@@ -29,7 +31,8 @@ Add these in **Vercel → Project Settings → Environment Variables**:
 |---|---|---|---|
 | `OPENAI_API_KEY` | Only for live AI planning | empty | Server-only OpenAI project key |
 | `OPENAI_MODEL` | No | `gpt-5.6-luna` | Server-selected planning model |
-| `ADAPTIVE_ROOMS_ENABLED` | No | `true` | Enables both bounded OpenAI planners |
+| `ADAPTIVE_ROOMS_ENABLED` | No | `true` | Enables bounded future-room planning |
+| `ADAPTIVE_REINFORCEMENTS_ENABLED` | No | `true` | Enables bounded optional-support recommendations |
 | `ADAPTIVE_ROOMS_MAX_CALLS_PER_SESSION` | No | `4` | Room-planner daily warm-instance limit |
 | `ADAPTIVE_ROOMS_TIMEOUT_MS` | No | `5000` | OpenAI abort timeout, clamped 1500–8000 ms |
 | `ADAPTIVE_ROOMS_COOLDOWN_MS` | No | `10000` | Minimum room-planner interval |
@@ -54,7 +57,7 @@ Changing a Vercel environment variable does not update an existing deployment. R
 9. Deploy.
 10. Open `https://YOUR_DOMAIN/api/health`.
 11. Confirm `status` is `ok`, and confirm `configured` is `true` for both adaptive systems when a key is installed.
-12. Start a game and complete the four calibration rooms. Confirm later rooms remain instant and the AI Director can report an OpenAI-assisted or local-fallback source.
+12. Start a game and complete the five calibration rooms. Confirm later rooms remain instant and the AI Director can report an OpenAI-assisted or local-fallback source.
 
 ## Vercel CLI alternative
 

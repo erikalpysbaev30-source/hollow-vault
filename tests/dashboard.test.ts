@@ -72,7 +72,7 @@ test("dashboard preferences migrate and history remains capped", () => {
   const migrated = migrateCustomization({ customization: { dashboardSettings: { detailLevel: "detailed", notifications: "minimal", showPostRoomSummary: false, lastViewedRecordId: "room-6" } } });
   assert.deepEqual(migrated.customization.dashboardSettings, { detailLevel: "detailed", notifications: "minimal", showPostRoomSummary: false, lastViewedRecordId: "room-6" });
   assert.equal(migrateSave({ adaptationRecords: Array(20).fill(record) }).adaptationRecords.length, 12);
-  assert.equal(DEFAULT_CUSTOMIZATION.dashboardSettings.detailLevel, "simple");
+  assert.equal(DEFAULT_CUSTOMIZATION.dashboardSettings.detailLevel, "detailed");
 });
 
 test("menu, pause, indicator, post-room summary, controller navigation, and responsive rules are wired", () => {

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { isKnownMapStyle, isMapStyleCompatible } from "@/game/customization";
 import { getRoomPreset } from "@/game/rooms";
+import {ENEMY_BEHAVIOR_PROFILES,ROOM_MODULES,getEnemyBehaviorProfile,getRoomModule} from "@/game/adaptive-model";
 
 const finiteRatio = z.number().finite().min(0).max(1);
 const dimensionsSchema = z.strictObject({
@@ -30,6 +31,20 @@ const candidateSchema = z.strictObject({
   mapStyleIds: z.array(z.string().min(1).max(80)).min(1).max(5),
 });
 
+const adaptiveContextSchema=z.strictObject({
+  player:z.strictObject({
+    aimSkill:finiteRatio,movementSkill:finiteRatio,survivalSkill:finiteRatio,reactionSkill:finiteRatio,tacticalSkill:finiteRatio,resourceSkill:finiteRatio,reinforcementSkill:finiteRatio,
+    aggressionPreference:finiteRatio,defensivePreference:finiteRatio,preferredCombatDistance:finiteRatio,frustrationRisk:finiteRatio,boredomRisk:finiteRatio,
+    confidence:z.strictObject({overall:finiteRatio,aim:finiteRatio,movement:finiteRatio,survival:finiteRatio,tactics:finiteRatio,resources:finiteRatio,reinforcements:finiteRatio,preferences:finiteRatio}),
+  }),
+  habits:z.strictObject({
+    repeatedHabitIds:z.array(z.string().min(1).max(60)).max(8),averageCombatDistance:finiteRatio,rushFrequency:finiteRatio,retreatFrequency:finiteRatio,stationaryCombatRatio:finiteRatio,coverUsageRate:finiteRatio,flankAvoidanceRate:finiteRatio,
+  }),
+  preferences:z.strictObject({preferredDifficulty:finiteRatio,preferredRoomDuration:finiteRatio,preferredEnemyDensity:finiteRatio,preferredTacticalComplexity:finiteRatio,preferredPacingSpeed:finiteRatio,adaptationStrength:finiteRatio,confidence:finiteRatio}),
+  pacingHistory:z.array(z.enum(["warmup","standard","pressure","recovery","experiment","challenge","elite","reward","pre_boss","boss"])).max(8),
+  calibration:z.strictObject({completionTimeFactor:z.number().finite().min(.7).max(1.3),damageFactor:z.number().finite().min(.7).max(1.3),killRateFactor:z.number().finite().min(.7).max(1.3),samples:z.number().int().min(0).max(10_000)}),
+});
+
 export const adaptiveRoomRequestSchema = z
   .strictObject({
     sessionId: z.string().regex(/^[a-zA-Z0-9-]{12,64}$/),
@@ -45,6 +60,9 @@ export const adaptiveRoomRequestSchema = z
     }),
     recentRooms: z.array(recentRoomSchema).max(5),
     candidates: z.array(candidateSchema).min(1).max(4),
+    adaptiveContext:adaptiveContextSchema,
+    allowedBehaviorProfileIds:z.array(z.string().min(1).max(60)).min(1).max(8).default(ENEMY_BEHAVIOR_PROFILES.map(x=>x.id)),
+    availableModuleIds:z.array(z.string().min(1).max(60)).min(1).max(20).default(ROOM_MODULES.map(x=>x.id)),
   })
   .superRefine((value, context) => {
     if (value.candidates.length !== value.roomsRequested) {
@@ -77,6 +95,11 @@ export const adaptiveRoomPlanSchema = z.strictObject({
   adaptationReasonCodes: z.array(z.string().min(1).max(40)).max(4),
   confidence: finiteRatio,
   mapStyleId: z.string().min(1).max(80),
+  pacingRole:z.enum(["warmup","standard","pressure","recovery","challenge","elite","pre_boss","boss","reward"]).default("standard"),
+  behaviorProfileId:z.string().min(1).max(60).default("balanced"),
+  roomModuleIds:z.array(z.string().min(1).max(60)).min(3).max(10).default(["entrance-south","arena-cover","flank-none","exit-south"]),
+  predictedDeathProbability:finiteRatio.default(.2),
+  predictedReinforcementUsageProbability:finiteRatio.default(.25),
 });
 
 export const adaptiveRoomResponseSchema = z.strictObject({
@@ -87,6 +110,7 @@ export type AdaptiveRoomRequest = z.infer<typeof adaptiveRoomRequestSchema>;
 export type AdaptiveRoomResponse = z.infer<typeof adaptiveRoomResponseSchema>;
 
 export function candidatesUseApprovedPresets(request: AdaptiveRoomRequest): boolean {
+  if(new Set(request.allowedBehaviorProfileIds).size!==request.allowedBehaviorProfileIds.length||request.allowedBehaviorProfileIds.some(id=>!getEnemyBehaviorProfile(id))||new Set(request.availableModuleIds).size!==request.availableModuleIds.length||request.availableModuleIds.some(id=>!getRoomModule(id)))return false;
   return request.candidates.every((candidate) => {
     const uniqueIds = new Set(candidate.presetIds);
     const uniqueStyles = new Set(candidate.mapStyleIds);
@@ -94,7 +118,7 @@ export function candidatesUseApprovedPresets(request: AdaptiveRoomRequest): bool
     const presetsAreValid=candidate.presetIds.every((presetId) => {
       const preset = getRoomPreset(presetId);
       if (!preset) return false;
-      const isBossRoom = candidate.roomSequenceIndex % 5 === 0;
+      const isBossRoom = candidate.roomSequenceIndex > 5 && candidate.roomSequenceIndex % 5 === 0;
       return isBossRoom ? preset.pacingRole === "boss" : preset.pacingRole !== "boss";
     });
     return presetsAreValid&&candidate.mapStyleIds.every(styleId=>candidate.presetIds.some(presetId=>isMapStyleCompatible(styleId,getRoomPreset(presetId)?.templateId||"")));
@@ -126,6 +150,11 @@ export const ADAPTIVE_ROOM_JSON_SCHEMA = {
           "adaptationReasonCodes",
           "confidence",
           "mapStyleId",
+          "pacingRole",
+          "behaviorProfileId",
+          "roomModuleIds",
+          "predictedDeathProbability",
+          "predictedReinforcementUsageProbability",
         ],
         properties: {
           roomSequenceIndex: { type: "integer", minimum: 1, maximum: 9_999 },
@@ -144,6 +173,11 @@ export const ADAPTIVE_ROOM_JSON_SCHEMA = {
           },
           confidence: { type: "number", minimum: 0, maximum: 1 },
           mapStyleId: { type: "string", maxLength: 80 },
+          pacingRole:{type:"string",enum:["warmup","standard","pressure","recovery","challenge","elite","pre_boss","boss","reward"]},
+          behaviorProfileId:{type:"string",maxLength:60},
+          roomModuleIds:{type:"array",minItems:3,maxItems:10,items:{type:"string",maxLength:60}},
+          predictedDeathProbability:{type:"number",minimum:0,maximum:1},
+          predictedReinforcementUsageProbability:{type:"number",minimum:0,maximum:1},
         },
       },
     },
