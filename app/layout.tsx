@@ -1,30 +1,24 @@
-import type { Metadata, Viewport } from 'next'
-import './globals.css'
+import type { Metadata } from "next";
+import "./globals.css";
+import "./systems.css";
+import "./director.css";
+import "./accessibility.css";
+import "./mobile.css";
+import "./compact.css";
 
 export const metadata: Metadata = {
-  title: 'ADAPTIVE//PROTOCOL',
-  description: 'The game studies how you play—not who you claim to be. Adaptive gameplay, deterministic skill measurement, transparent progression.',
-  generator: 'v0.app',
-  icons: {
-    icon: '/favicon.ico',
+  metadataBase: new URL("https://fable-six-unwritten.erikalpysbaev30.chatgpt.site"),
+  title: "Hollow Vault — Rift Protocol",
+  description: "A room-crawling bullet roguelite with distinct monsters, weapon swapping, relic builds, and boss encounters.",
+  icons: { icon: "/favicon.svg" },
+  openGraph: {
+    title: "Hollow Vault — Rift Protocol",
+    description: "Descend, adapt, and survive a shifting monster vault.",
+    images: [{ url: "/og.png", width: 1672, height: 941, alt: "Hollow Vault — Rift Protocol" }],
   },
-}
+  twitter: { card: "summary_large_image", images: ["/og.png"] },
+};
 
-export const viewport: Viewport = {
-  colorScheme: 'dark',
-  themeColor: '#1e1e24',
-}
+export const viewport={width:"device-width",initialScale:1,viewportFit:"cover",themeColor:"#090813"};
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
-  return (
-    <html lang="en" className="dark">
-      <body className="antialiased bg-background text-foreground">
-        {children}
-      </body>
-    </html>
-  )
-}
+export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en"><body>{children}</body></html>}
