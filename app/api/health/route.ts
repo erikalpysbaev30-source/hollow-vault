@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { adaptiveRoomsEnabled, adaptiveRoomsModel } from "@/lib/server/openai/client";
+import { adaptiveReinforcementsEnabled, adaptiveRoomsEnabled, adaptiveRoomsModel } from "@/lib/server/openai/client";
 
 export const runtime = "nodejs";
 export const maxDuration = 5;
@@ -19,7 +19,7 @@ export function GET() {
       model: adaptiveRoomsModel(),
     },
     adaptiveReinforcements: {
-      enabled,
+      enabled: adaptiveReinforcementsEnabled(),
       configured,
     },
   });
