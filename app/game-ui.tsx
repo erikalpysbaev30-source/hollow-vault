@@ -14,6 +14,7 @@ import {
   getReinforcement, REINFORCEMENT_REASON_TEXT,
   type ReinforcementDecision, type ReinforcementUsageSummary,
 } from "@/game/reinforcements";
+import type { DirectorHistoryEntry } from "@/game/game-director";
 
 const requirementText = (id?: string) => UNLOCK_REQUIREMENTS.find((requirement) => requirement.id === id)?.description || "Available by default";
 const pct = (value: number) => `${Math.round(value * 100)}%`;
@@ -28,6 +29,7 @@ interface DashboardProps {
   usage: ReinforcementUsageSummary;
   reinforcement: ReinforcementDecision | null;
   adaptiveEnabled: boolean;
+  requestHistory: DirectorHistoryEntry[];
   changeDetail: (value: "simple" | "detailed") => void;
   onReturn: () => void;
   onDetail: (record: AIAdaptationRecord) => void;
@@ -67,7 +69,7 @@ export function DirectorDashboard(props: DashboardProps) {
         <div className="director-three-cards">
           <section className="plain-director-card"><small>01 · LAST ROOM</small><h2>What the Director noticed</h2><div className="observation-list">{observations.length ? observations.map(item => <p key={item.text}><i aria-hidden>{item.icon}</i>{item.text}</p>) : <p><i aria-hidden>◇</i>The last room stayed close to its expected result.</p>}</div></section>
           <section className="plain-director-card"><small>02 · NEXT ROOM</small><h2>What changed</h2>{visibleChanges.length ? <div className="friendly-changes">{visibleChanges.map(change => <div key={change.field}><i className={change.direction}>{change.direction === "increase" ? "↑" : change.direction === "decrease" ? "↓" : "↻"}</i><span><small>{changeCategory(change.field)} · {change.direction === "changed" ? "Changed" : change.direction === "increase" ? "↑ Increase" : "↓ Decrease"}</small><b>{change.label}</b><em>{change.before} → {change.after}</em></span></div>)}</div> : <p className="empty-state">= Unchanged. No mechanical values changed; the next room keeps the current balance or changes presentation only.</p>}</section>
-          <section className="plain-director-card why-card"><small>03 · REASON</small><h2>Why it changed</h2><i className="reason-icon" aria-hidden>{primaryReason.icon}</i><h3>{primaryReason.title}</h3><p>{primaryReason.explanation}</p><strong>Enemy health and damage stay unchanged.</strong></section>
+          <section className="plain-director-card why-card"><small>03 · REASON</small><h2>Why it changed</h2><i className="reason-icon" aria-hidden>{primaryReason.icon}</i><h3>{primaryReason.title}</h3><p>{primaryReason.explanation}</p><strong>The AI never directly changes health or damage; normal room progression still applies.</strong></section>
         </div>
 
         <section className="difficulty-timeline" aria-label="Recent difficulty timeline"><div><h2>Recent chamber path</h2><p>These labels describe room pressure, not your worth as a player.</p></div><ol>{records.slice(-5).map(record => <li key={record.id}><button onClick={() => props.onDetail(record)} aria-label={`Open details for ${record.roomName}`}><small>ROOM {record.roomIndex}</small><b>{record.roomName}</b><span>{difficultyLabel(record.difficultyTier)}</span></button><i aria-hidden>→</i></li>)}{next && <li className="next"><button onClick={() => latest && props.onDetail(latest)}><small>NEXT</small><b>{next.roomName}</b><span>{next.difficultyLabel}</span></button></li>}</ol></section>
@@ -80,7 +82,8 @@ export function DirectorDashboard(props: DashboardProps) {
         {detail === "detailed" && <section className="director-details"><div><small>LAST ROOM RESULT</small><h2>{latest.roomName}</h2><dl><div><dt>Accuracy</dt><dd>{pct(latest.observedMetrics.accuracy)}</dd></div><div><dt>Enemies cleared</dt><dd>{pct(latest.observedMetrics.killRate)}</dd></div><div><dt>Damage taken</dt><dd>{pct(latest.observedMetrics.damageTakenRatio)}</dd></div><div><dt>Completion</dt><dd>{Math.round(latest.prediction.actualCompletionTimeSeconds)}s</dd></div></dl></div><div><small>PREDICTION CHECK</small><h2>Expected and actual</h2><p>Expected completion: <b>{Math.round(latest.prediction.predictedCompletionTimeSeconds)}s</b></p><p>Actual completion: <b>{Math.round(latest.prediction.actualCompletionTimeSeconds)}s</b></p><p>Expected clear rate: <b>{pct(latest.prediction.predictedKillRate)}</b></p><p>Actual clear rate: <b>{pct(latest.prediction.actualKillRate)}</b></p></div><div><small>HOW WAS IT CREATED?</small><h2>{source.title}</h2><p>{source.text}</p><p>{latest.localAdjustments.length ? `${latest.localAdjustments.length} requested value was adjusted by the game before use.` : "The final room passed the game's local safety checks."}</p></div></section>}
       </>}
 
-      <aside className="privacy-note"><b>WHAT THE DIRECTOR USES</b><p>Room-level accuracy, completion time, damage, enemy clears, movement, resources, and reinforcement use. It does not send recordings, raw controls, messages, save files, or account secrets.</p></aside>
+      {props.requestHistory.length>0&&<section className="director-history"><h2>Player-requested changes</h2><div>{props.requestHistory.slice(-5).reverse().map(entry=><article key={entry.id}><small>PLAYER REQUEST · {entry.source.toUpperCase()}</small><b>{entry.request}</b><p>{entry.reply}</p><ul>{entry.actions.map(action=><li key={action.actionId}>{action.reason}</li>)}</ul></article>)}</div></section>}
+      <aside className="privacy-note"><b>WHAT THE DIRECTOR USES</b><p>Room-level performance and confirmed player requests. Voice audio is never stored; browser transcription produces editable text. The game does not send raw controls, save files, or account secrets.</p></aside>
       {props.onDebug && <section className="debug-tools"><h2>Development simulations</h2>{["beginner", "expert", "deaths", "aim-survival", "force-reinforcement", "force-fallback", "unlock-all", "clear-history"].map(action => <button key={action} onClick={() => props.onDebug?.(action)}>{action.replaceAll("-", " ")}</button>)}</section>}
     </div>
   </section>;
@@ -93,7 +96,7 @@ export function AIDirectorWidget({ record, compact, onOpen }: { record: AIAdapta
 
 export function PostRoomDirectorSummary({ record, onOpen }: { record: AIAdaptationRecord; onOpen: () => void }) {
   const observations = playerObservations(record);
-  return <aside className="post-room-director"><small>AI DIRECTOR</small><h3>{record.nextRoom ? `${record.nextRoom.difficultyLabel} next` : "Room result recorded"}</h3><p>{observations.map(item => item.text).slice(0, 2).join(" ") || "The room stayed close to its expected result."}</p><strong>{record.nextRoom ? `${record.nextRoom.trend}. Enemy health unchanged.` : "The Director is preparing later rooms."}</strong><button onClick={onOpen}>VIEW AI DIRECTOR</button></aside>;
+  return <aside className="post-room-director"><small>AI DIRECTOR</small><h3>{record.nextRoom ? `${record.nextRoom.difficultyLabel} next` : "Room result recorded"}</h3><p>{observations.map(item => item.text).slice(0, 2).join(" ") || "The room stayed close to its expected result."}</p><strong>{record.nextRoom ? `${record.nextRoom.trend}. AI health and damage modifiers remain unchanged.` : "The Director is preparing later rooms."}</strong><button onClick={onOpen}>VIEW AI DIRECTOR</button></aside>;
 }
 
 export function RecordDetail({ record, onClose }: { record: AIAdaptationRecord; onClose: () => void }) {
