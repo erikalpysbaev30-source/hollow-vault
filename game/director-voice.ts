@@ -1,0 +1,3 @@
+export interface DirectorVoiceCandidate{name:string;lang:string;default?:boolean;localService?:boolean}
+
+export function selectDirectorVoiceIndex(voices:readonly DirectorVoiceCandidate[]){let best=-1,bestScore=-Infinity;for(let i=0;i<voices.length;i++){const voice=voices[i],name=voice.name.toLowerCase(),lang=voice.lang.toLowerCase();let score=lang.startsWith("en")?40:-40;if(/natural|neural|premium|enhanced/.test(name))score+=45;if(/samantha|aria|ava|serena|google us english|daniel/.test(name))score+=30;if(/compact|novelty|whisper|robot/.test(name))score-=35;if(voice.localService)score+=6;if(voice.default)score+=3;if(score>bestScore){bestScore=score;best=i}}return best;}

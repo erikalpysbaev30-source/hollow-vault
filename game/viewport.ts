@@ -1,0 +1,5 @@
+export interface ViewportMetrics{height:number;keyboardInset:number}
+
+export function calculateViewportMetrics(innerHeight:number,visualHeight?:number,offsetTop=0):ViewportMetrics{const height=Math.max(1,Math.round(visualHeight||innerHeight)),keyboardInset=Math.max(0,Math.round(innerHeight-height-Math.max(0,offsetTop)));return{height,keyboardInset}}
+
+export function installViewportMetrics(){if(typeof window==="undefined"||typeof document==="undefined")return()=>{};const root=document.documentElement,viewport=window.visualViewport,apply=()=>{const metrics=calculateViewportMetrics(window.innerHeight,viewport?.height,viewport?.offsetTop);root.style.setProperty("--app-height",`${metrics.height}px`);root.style.setProperty("--keyboard-inset",`${metrics.keyboardInset}px`)};apply();window.addEventListener("resize",apply);window.addEventListener("orientationchange",apply);viewport?.addEventListener("resize",apply);viewport?.addEventListener("scroll",apply);return()=>{window.removeEventListener("resize",apply);window.removeEventListener("orientationchange",apply);viewport?.removeEventListener("resize",apply);viewport?.removeEventListener("scroll",apply)}}
